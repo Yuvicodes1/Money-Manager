@@ -87,3 +87,16 @@ Examples:
 
 **It downloads packages from npm registry and stores it in** 
 - node_modules/
+
+
+## Request Codes
+### Sends 500 - Internal Server Error to client.
+### Sends 400 - sends HTTP 400 (Bad Request).
+### Sends 401 - Unauthorised
+### Sends 404 - Not Found
+### Sends 200 - OK
+### Sends 201 - 201 = Created (correct REST practice).
+
+### We use ```res.status()``` to send the HTTP status code along with the response so the client (frontend, mobile app, Postman, etc.) knows what happened.
+
+```res.status(code).json(data);``` : here res is respose object, status is HTTPS status code, json() -> sends data back as json. 
