@@ -1,4 +1,5 @@
 const Portfolio = require("../models/Portfolio");
+const { getCurrentStockPrice } = require("../services/stockService");
 
 // Create portfolio (if not exists)
 exports.createPortfolio = async (req, res) => {
@@ -58,7 +59,45 @@ exports.getPortfolio = async (req, res) => {
       return res.status(404).json({ message: "Portfolio not found" });
     }
 
-    res.status(200).json(portfolio);
+    let totalInvested = 0;
+    let totalCurrentValue = 0;
+
+    const enrichedStocks = [];
+    console.log("Portfolio Stocks:", portfolio.stocks);
+
+    for (const stock of portfolio.stocks) {
+      const currentPrice = await getCurrentStockPrice(stock.symbol);
+      console.log("Processing stock:", stock.symbol);
+
+      const investedAmount = stock.quantity * stock.buyPrice;
+      const currentValue = stock.quantity * currentPrice;
+      const profitLoss = parseFloat((currentValue - investedAmount).toFixed(2));
+
+      totalInvested += investedAmount;
+      totalCurrentValue += currentValue;
+
+      enrichedStocks.push({
+        symbol: stock.symbol,
+        quantity: stock.quantity,
+        buyPrice: stock.buyPrice,
+        currentPrice,
+        investedAmount,
+        currentValue,
+        profitLoss
+      });
+    }
+
+    const totalProfitLoss = parseFloat((totalCurrentValue - totalInvested).toFixed(2));
+
+    res.status(200).json({
+      user: portfolio.user,
+      stocks: enrichedStocks,
+      summary: {
+        totalInvested,
+        totalCurrentValue,
+        totalProfitLoss
+      }
+    });
 
   } catch (error) {
     console.error(error);

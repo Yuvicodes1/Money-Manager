@@ -1,6 +1,4 @@
-# Node.js and npm – Clear Conceptual Explanation
-
-## The Original Problem
+# Node.js and npm 
 
 Originally:
 
@@ -11,8 +9,6 @@ Originally:
   - Another language for backend
 
 This increased complexity. Node.js solved this problem.
-
----
 
 # 🌳 What is Node.js?
 
@@ -28,7 +24,7 @@ Breaking that down:
 
 👉 Node.js allows JavaScript to run outside the browser (on your computer or server).
 
----
+
 
 ## ⚙️ What Makes Node.js Special?
 

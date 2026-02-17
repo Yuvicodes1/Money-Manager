@@ -51,3 +51,5 @@ The -u means: Set upstream (link local branch to remote branch)
 
 So next time you can just run: ```git push```
 No need to type origin main again.
+
+### install a dependency : ```npm install axios/<name>```
