@@ -100,3 +100,59 @@ Examples:
 ### We use ```res.status()``` to send the HTTP status code along with the response so the client (frontend, mobile app, Postman, etc.) knows what happened.
 
 ```res.status(code).json(data);``` : here res is respose object, status is HTTPS status code, json() -> sends data back as json. 
+
+
+# What is AXIOS?
+Axios is a popular, promise-based JavaScript library used to make asynchronous HTTP requests from browsers or Node.js to servers. It acts as a client-side library to easily fetch data from APIs, supporting GET, POST, and other methods while automatically transforming JSON data
+
+**Our Architecture**
+- ***React Frontend  →  Node Backend  →  Database*** <>
+- Axios is used : ***React → (Axios request) → Node API***
+
+
+Browsers already have fetch(), but Axios is easier and more powerful.
+### Advantages of Axios:
+- ✅ Simpler syntax
+- ✅ Automatic JSON conversion
+- ✅ Better error handling
+- ✅ Request interceptors
+- ✅ Works in Node + Browser
+- ✅ Timeout support
+- ✅ Widely used in industry
+
+**USE** -
+```
+//THIS sends a GET request to our backewnd
+import axios from "axios";
+
+axios.get("http://localhost:5000/")
+  .then(res => console.log(res.data))
+  .catch(err => console.error(err));
+```
+
+### HTTPS methods supported by AXIOS :
+- GET ```axios.get("/api/stocks");```
+- POST 
+```axios.post("/api/stocks", {
+  name: "Apple",
+  price: 180
+});
+```
+- PUT ```axios.put("/api/stocks/1", {...});```
+- DELETE ```axios.delete("/api/stocks/1");``` 
+
+### Typical MERN Flow with AXIOS
+
+```
+React Button Click
+        ↓
+Axios POST request
+        ↓
+Node API receives
+        ↓
+MongoDB updated
+        ↓
+Response sent
+        ↓
+React UI updates
+```
