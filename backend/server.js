@@ -4,6 +4,8 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const userRoutes = require("./routes/userRoutes");
 const portfolioRoutes = require("./routes/portfolioRoutes");
+const marketRoutes = require("./routes/marketRoutes");
+
 
 
 
@@ -11,7 +13,7 @@ const app = express();
 
 app.use(cors());
 app.use(express.json());
-
+app.use("/api/market", marketRoutes);
 // Test route
 app.get("/", (req, res) => {
   res.send("Stock Monitor API is running...");
