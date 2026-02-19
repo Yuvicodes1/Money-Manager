@@ -1,48 +1,69 @@
 import { useNavigate } from "react-router-dom";
 import { useContext } from "react";
 import { ThemeContext } from "../context/ThemeContext";
+import {
+  FaMoon,
+  FaSun,
+  FaChartLine,
+  FaWallet,
+  FaChartBar,
+  FaGithub,
+  FaLinkedin,
+  FaTwitter,
+  FaInstagram
+} from "react-icons/fa";
 
 export default function Landing() {
   const navigate = useNavigate();
   const { darkMode, setDarkMode } = useContext(ThemeContext);
 
   return (
-    <div className="min-h-screen transition-colors duration-500
+    <div
+      className="min-h-screen scroll-smooth transition-colors duration-500
       bg-lightBg text-lightText
-      dark:bg-darkBg dark:text-darkText"
+      dark:bg-darkBg dark:text-darkText
+      relative overflow-hidden"
     >
 
-      {/* Navbar */}
-      <nav className="flex justify-between items-center px-12 py-6
-        border-b border-gray-200
-        dark:border-darkBorder"
+      {/* Subtle Noise Texture */}
+      <div className="pointer-events-none absolute inset-0 opacity-[0.03] dark:opacity-[0.05]"
+        style={{
+          backgroundImage:
+            "url('https://www.transparenttextures.com/patterns/noise.png')"
+        }}
+      />
+
+      {/* ================= NAVBAR ================= */}
+      <nav
+        className="sticky top-0 z-50 backdrop-blur-md
+        bg-white/70 dark:bg-darkBg/70
+        border-b border-gray-300 dark:border-darkBorder
+        flex justify-between items-center px-12 py-5"
       >
-        <h1 className="text-2xl font-bold">
-          StockMonitor
+        <h1 className="text-3xl font-bold tracking-tight text-lightAccent dark:text-darkAccent">
+          Stock Manager
         </h1>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-5">
 
           {/* Theme Toggle */}
           <button
             onClick={() => setDarkMode(!darkMode)}
-            className="px-4 py-2 rounded-lg border
-              border-gray-300
-              dark:border-darkBorder
-              hover:bg-gray-100
-              dark:hover:bg-darkCard
-              transition"
+            className="p-3 rounded-lg border
+            border-gray-300 dark:border-darkBorder
+            hover:bg-gray-100 dark:hover:bg-darkCard
+            transition transform hover:scale-110"
           >
-            {darkMode ? "Light Mode" : "Dark Mode"}
+            {darkMode ? <FaSun /> : <FaMoon />}
           </button>
 
-          {/* Login Button */}
+          {/* Login */}
           <button
             onClick={() => navigate("/login")}
-            className="px-5 py-2 rounded-lg font-medium
-              bg-lightAccent text-white
-              dark:bg-darkAccent dark:text-black
-              hover:opacity-90 transition"
+            className="px-6 py-2 rounded-xl font-medium
+            bg-lightAccent text-white
+            dark:bg-darkAccent dark:text-black
+            hover:scale-105 transition shadow-md"
           >
             Login
           </button>
@@ -50,71 +71,179 @@ export default function Landing() {
         </div>
       </nav>
 
-      {/* Hero Section */}
-      <div className="flex flex-col items-center justify-center
-        text-center px-6 py-24"
+      {/* ================= HERO ================= */}
+      <section className="flex flex-col items-center justify-center
+        text-center px-6 py-28 relative z-10"
       >
-
         <h2 className="text-5xl font-bold max-w-3xl leading-tight">
-          Professional Real-Time Portfolio Management
+          Your Ultimate Stock Portfolio Tracker
         </h2>
 
         <p className="mt-6 text-lg max-w-2xl
-          text-lightMuted
-          dark:text-gray-400"
+          text-lightMuted dark:text-gray-400"
         >
           Track investments, monitor live stock prices,
           analyze performance, and make smarter financial decisions.
         </p>
 
+        <p className="mt-6 text-lg font-semibold
+          text-lightAccent dark:text-darkAccent"
+        >
+          Earn with Us, Learn with Us.
+        </p>
+
         <button
           onClick={() => navigate("/login")}
-          className="mt-10 px-8 py-4 rounded-xl text-lg font-semibold
-            bg-lightSecondary text-white
-            dark:bg-darkAccent dark:text-black
-            hover:opacity-90 transition"
+          className="mt-12 px-8 py-4 rounded-xl text-lg font-semibold
+          bg-lightSecondary text-white
+          dark:bg-darkAccent dark:text-black
+          hover:scale-105 transition shadow-lg"
         >
           Get Started
         </button>
+      </section>
 
-      </div>
-
-      {/* Feature Section */}
-      <div className="grid grid-cols-3 gap-10 px-20 pb-24">
+      {/* ================= FEATURES ================= */}
+      <section className="grid md:grid-cols-3 gap-12 px-16 pb-28 relative z-10">
 
         {[
           {
+            icon: <FaChartLine size={30} />,
             title: "Real-Time Prices",
-            desc: "Live stock tracking powered by market data APIs."
+            desc: "Live stock tracking powered by market data APIs. Never miss a beat."
           },
           {
+            icon: <FaWallet size={30} />,
             title: "Portfolio Analytics",
-            desc: "Automatic profit/loss calculation and insights."
+            desc: "Automatic profit/loss calculation and detailed performance insights."
           },
           {
+            icon: <FaChartBar size={30} />,
             title: "Historical Charts",
-            desc: "Visualize trends with detailed market data."
+            desc: "Visualize trends and analyze historical performance with ease."
           }
         ].map((feature, index) => (
           <div
             key={index}
-            className="p-8 rounded-xl border
-              border-gray-200
-              bg-white
-              dark:bg-darkCard
-              dark:border-darkBorder
-              shadow-sm"
+            className="p-10 rounded-2xl border
+            border-gray-200 dark:border-darkBorder
+            bg-white dark:bg-darkCard
+            shadow-sm hover:shadow-lg
+            transition duration-300 hover:-translate-y-2"
           >
-            <h3 className="text-xl font-semibold mb-3">
+            <div className="mb-6 text-lightAccent dark:text-darkAccent">
+              {feature.icon}
+            </div>
+
+            <h3 className="text-xl font-semibold mb-4">
               {feature.title}
             </h3>
+
             <p className="text-lightMuted dark:text-gray-400">
               {feature.desc}
             </p>
           </div>
         ))}
 
-      </div>
+      </section>
+
+      {/* ================= CTA ================= */}
+      <section
+        className="py-24 text-center relative z-10
+        bg-gradient-to-r
+        from-lightSecondary to-lightAccent
+        dark:from-darkAccent dark:to-darkBg
+        text-white dark:text-black"
+      >
+        <h2 className="text-3xl font-bold mb-6">
+          Ready to Take Control of Your Investments?
+        </h2>
+
+        <p className="max-w-2xl mx-auto mb-10">
+          Join smart investors using Stock Manager
+          to track and optimize their portfolios.
+        </p>
+
+        <button
+          onClick={() => navigate("/login")}
+          className="px-8 py-4 rounded-xl font-semibold
+          bg-white text-black
+          dark:bg-black dark:text-white
+          hover:scale-105 transition shadow-md"
+        >
+          Start Now
+        </button>
+      </section>
+
+      {/* ================= FOOTER ================= */}
+      <footer
+        className="px-16 py-20
+        bg-lightBg dark:bg-darkBg
+        border-t border-gray-300 dark:border-darkBorder
+        relative z-10"
+      >
+        <div className="grid md:grid-cols-4 gap-12">
+
+          {/* Brand */}
+          <div>
+            <h3 className="text-xl font-bold mb-4 text-lightAccent dark:text-darkAccent">
+              Stock Manager
+            </h3>
+            <p className="text-lightMuted dark:text-gray-400 text-sm">
+              A professional real-time portfolio management platform
+              designed for modern investors.
+            </p>
+          </div>
+
+          {/* Company */}
+          <div>
+            <h4 className="font-semibold mb-4">Company</h4>
+            <ul className="space-y-2 text-lightMuted dark:text-gray-400 text-sm">
+              <li className="hover:text-lightAccent dark:hover:text-darkAccent cursor-pointer">About</li>
+              <li className="hover:text-lightAccent dark:hover:text-darkAccent cursor-pointer">Privacy</li>
+              <li className="hover:text-lightAccent dark:hover:text-darkAccent cursor-pointer">Terms</li>
+            </ul>
+          </div>
+
+          {/* Contact */}
+          <div>
+            <h4 className="font-semibold mb-4">Contact</h4>
+            <ul className="space-y-2 text-lightMuted dark:text-gray-400 text-sm">
+              <li>Email: yuvicodes@gmail.com</li>
+              <li>Phone: +91 7060043489</li>
+              <li>Location: India</li>
+            </ul>
+          </div>
+
+          {/* Social + Developer */}
+          <div>
+            <h4 className="font-semibold mb-4">Connect</h4>
+            <div className="flex gap-4 mb-4 text-xl">
+              <a href="https://github.com/Yuvicodes1" target="_blank" className="hover:text-lightAccent dark:hover:text-darkAccent">
+                <FaGithub />
+              </a>
+              <a href="https://www.linkedin.com/in/yathaartha-srivastava-063758258/" target="_blank" className="hover:text-lightAccent dark:hover:text-darkAccent">
+                <FaLinkedin />
+              </a>
+              <a href="https://www.instagram.com/" target="_blank" className="hover:text-lightAccent dark:hover:text-darkAccent">
+                <FaInstagram />
+              </a>
+            </div>
+
+            <p className="text-lightMuted dark:text-gray-400 text-sm">
+              Developed by Yuvi
+            </p>
+          </div>
+
+        </div>
+
+        <div className="mt-16 pt-6 text-center text-sm
+          border-t border-gray-300 dark:border-darkBorder
+          text-lightMuted dark:text-gray-500"
+        >
+          © {new Date().getFullYear()} Stock Manager. All rights reserved.
+        </div>
+      </footer>
 
     </div>
   );

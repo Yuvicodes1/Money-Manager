@@ -21,7 +21,10 @@ export default {
         darkBorder: "#1C2A23",
         darkText: "#FBFAF8",
         darkAccent: "#2DD4BF"
-      }
+      },
+      fontFamily: {
+        roboto: ['Roboto', 'sans-serif'],
+      },
     },
   },
   plugins: [],
