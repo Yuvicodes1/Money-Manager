@@ -1,0 +1,15 @@
+Before :
+Every GET portfolio request → Calls Alpha Vantage → Consumes API quota → Slows response.
+
+If 100 users open dashboard:
+= 100 × API calls
+= API limit exceeded
+= system fails
+
+So, adding a simple inbuilt caching system - 
+symbol → { price, timestamp }
+
+With:
+TTL (Time To Live) - Auto refresh after expiry, No repeated API calls within window
+For now:
+TTL = 60 seconds
