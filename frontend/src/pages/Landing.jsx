@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { useContext } from "react";
+import { useContext, useState, useEffect } from "react";
 import { ThemeContext } from "../context/ThemeContext";
 import {
   FaMoon,
@@ -10,12 +10,29 @@ import {
   FaGithub,
   FaLinkedin,
   FaTwitter,
-  FaInstagram
+  FaInstagram,
+  FaTimes // Added for the Close (X) icon
 } from "react-icons/fa";
 
 export default function Landing() {
   const navigate = useNavigate();
   const { darkMode, setDarkMode } = useContext(ThemeContext);
+  
+  // Modal State
+  const [showModal, setShowModal] = useState(false);
+
+  // Scroll lock when modal is open
+  useEffect(() => {
+    if (showModal) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "auto";
+    }
+    // Cleanup function to ensure scrolling is restored if component unmounts
+    return () => {
+      document.body.style.overflow = "auto";
+    };
+  }, [showModal]);
 
   return (
     <div
@@ -164,14 +181,15 @@ export default function Landing() {
           to track and optimize their portfolios.
         </p>
 
+        {/* Updated CTA Button */}
         <button
-          onClick={() => navigate("/login")}
+          onClick={() => setShowModal(true)}
           className="px-8 py-4 rounded-xl font-semibold
           bg-white text-black
           dark:bg-black dark:text-white
           hover:scale-105 transition shadow-md"
         >
-          Start Now
+          Know More
         </button>
       </section>
 
@@ -219,13 +237,13 @@ export default function Landing() {
           <div>
             <h4 className="font-semibold mb-4">Connect</h4>
             <div className="flex gap-4 mb-4 text-xl">
-              <a href="https://github.com/Yuvicodes1" target="_blank" className="hover:text-lightAccent dark:hover:text-darkAccent">
+              <a href="https://github.com/Yuvicodes1" target="_blank" rel="noreferrer" className="hover:text-lightAccent dark:hover:text-darkAccent">
                 <FaGithub />
               </a>
-              <a href="https://www.linkedin.com/in/yathaartha-srivastava-063758258/" target="_blank" className="hover:text-lightAccent dark:hover:text-darkAccent">
+              <a href="https://www.linkedin.com/in/yathaartha-srivastava-063758258/" target="_blank" rel="noreferrer" className="hover:text-lightAccent dark:hover:text-darkAccent">
                 <FaLinkedin />
               </a>
-              <a href="https://www.instagram.com/" target="_blank" className="hover:text-lightAccent dark:hover:text-darkAccent">
+              <a href="https://www.instagram.com/" target="_blank" rel="noreferrer" className="hover:text-lightAccent dark:hover:text-darkAccent">
                 <FaInstagram />
               </a>
             </div>
@@ -244,6 +262,67 @@ export default function Landing() {
           © {new Date().getFullYear()} Stock Manager. All rights reserved.
         </div>
       </footer>
+
+      {/* ================= MODAL ================= */}
+      {showModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center"
+        >
+          {/* Background Overlay - extracted onClick to here and added smooth transition */}
+          <div 
+            className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity duration-300 animate-[fadeIn_0.3s_ease-out]" 
+            onClick={() => setShowModal(false)}
+          />
+
+          {/* Modal Box */}
+          <div
+            className="relative z-10 w-[90%] max-w-2xl
+            bg-white dark:bg-darkCard
+            text-lightText dark:text-darkText
+            rounded-2xl shadow-2xl p-10
+            animate-[fadeIn_0.3s_ease-out]"
+          >
+            {/* Close (X) Icon */}
+            <button
+              onClick={() => setShowModal(false)}
+              className="absolute top-5 right-5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition transform hover:scale-110"
+              aria-label="Close modal"
+            >
+              <FaTimes size={24} />
+            </button>
+
+            <h2 className="text-2xl font-bold mb-6 pr-8 text-lightAccent dark:text-darkAccent">
+              About Stock Manager
+            </h2>
+
+            <p className="mb-4 text-lightMuted dark:text-gray-400">
+              Stock Manager is an enterprise-grade portfolio management platform
+              designed to deliver real-time stock insights, automated analytics,
+              and historical data visualization.
+            </p>
+
+            <p className="mb-6 text-lightMuted dark:text-gray-400">
+              Built with scalability and performance in mind, it empowers
+              investors with intelligent decision-making tools and
+              transparent financial tracking.
+            </p>
+
+            <button
+              onClick={() => {
+                setShowModal(false);
+                navigate("/login");
+              }}
+              className="px-6 py-3 rounded-xl font-medium
+              bg-lightAccent text-white
+              dark:bg-darkAccent dark:text-black
+              hover:scale-105 transition"
+            >
+              Get Started
+            </button>
+
+          </div>
+        </div>
+      )}
 
     </div>
   );
