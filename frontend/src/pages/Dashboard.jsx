@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import AppLayout from "../components/layout/Applayout";
-import API from "../services/api";
+import AppLayout from "../components/layout/AppLayout";
+import API from "../services/Api";
 import PortfolioChart from "../components/dashboard/PortfolioChart";
 
 export default function Dashboard() {

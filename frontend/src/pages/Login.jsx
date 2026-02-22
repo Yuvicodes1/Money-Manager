@@ -1,20 +1,25 @@
 import React, { useState, useContext } from "react";
 import { FcGoogle } from "react-icons/fc";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
+import {
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  GoogleAuthProvider,
+  signInWithPopup,
+} from "firebase/auth";
+import { auth } from "../firebase";
+import API from "../services/Api";
 import { ThemeContext } from "../context/ThemeContext";
 
 const Login = () => {
   const { darkMode } = useContext(ThemeContext);
+  const navigate = useNavigate();
 
   const [isLogin, setIsLogin] = useState(true);
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
-    confirmPassword: "",
   });
 
   const [error, setError] = useState("");
@@ -26,43 +31,81 @@ const Login = () => {
     });
   };
 
-  const getPasswordStrength = (password) => {
-    if (password.length < 6) return "Weak";
-    if (
-      password.match(/[A-Z]/) &&
-      password.match(/[0-9]/) &&
-      password.length >= 8
-    )
-      return "Strong";
-    return "Medium";
-  };
-
-  const passwordStrength = getPasswordStrength(formData.password);
-
-  const handleSubmit = (e) => {
+  // ===========================
+  // Handle Email Auth
+  // ===========================
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    if (!isLogin && formData.password !== formData.confirmPassword) {
-      return setError("Passwords do not match.");
-    }
+    try {
+      let userCredential;
 
-    console.log(isLogin ? "Login" : "Signup", formData);
+      if (isLogin) {
+        userCredential = await signInWithEmailAndPassword(
+          auth,
+          formData.email,
+          formData.password
+        );
+      } else {
+        userCredential = await createUserWithEmailAndPassword(
+          auth,
+          formData.email,
+          formData.password
+        );
+      }
+
+      const firebaseUser = userCredential.user;
+
+      // Send to backend
+      const res = await API.post("/users", {
+        firebaseUID: firebaseUser.uid,
+        email: firebaseUser.email,
+        name: formData.name || firebaseUser.email,
+      });
+
+      // Save Mongo _id
+      localStorage.setItem("userId", res.data._id);
+
+      navigate("/dashboard");
+
+    } catch (err) {
+      console.error(err);
+      setError(err.message);
+    }
+  };
+
+  // ===========================
+  // Google Auth
+  // ===========================
+  const handleGoogleLogin = async () => {
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(auth, provider);
+
+      const firebaseUser = result.user;
+
+      const res = await API.post("/users", {
+        firebaseUID: firebaseUser.uid,
+        email: firebaseUser.email,
+        name: firebaseUser.displayName,
+      });
+
+      localStorage.setItem("userId", res.data._id);
+
+      navigate("/dashboard");
+
+    } catch (error) {
+      console.error(error);
+      setError("Google login failed.");
+    }
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center transition-colors duration-500
-      bg-lightBg text-lightText
-      dark:bg-darkBg dark:text-darkText"
-    >
-      <div
-        className="w-96 p-8 rounded-2xl shadow-lg transition
-        bg-white dark:bg-darkCard
-        border border-gray-200 dark:border-darkBorder"
-      >
-        <h2 className="text-2xl font-bold text-center mb-6 text-lightAccent dark:text-darkAccent">
-          {isLogin ? "Welcome Back 👋" : "Create an Account 🚀"}
+    <div className="min-h-screen flex items-center justify-center bg-lightBg dark:bg-darkBg">
+      <div className="w-96 p-8 rounded-2xl shadow-lg bg-white dark:bg-darkCard">
+        <h2 className="text-2xl font-bold text-center mb-6">
+          {isLogin ? "Welcome Back" : "Create Account"}
         </h2>
 
         {error && (
@@ -76,11 +119,7 @@ const Login = () => {
               type="text"
               name="name"
               placeholder="Full Name"
-              className="w-full p-3 rounded-lg border
-              bg-white dark:bg-darkBg
-              border-gray-300 dark:border-darkBorder
-              focus:outline-none"
-              value={formData.name}
+              className="w-full p-3 rounded-lg border"
               onChange={handleChange}
               required
             />
@@ -90,123 +129,47 @@ const Login = () => {
             type="email"
             name="email"
             placeholder="Email"
-            className="w-full p-3 rounded-lg border
-            bg-white dark:bg-darkBg
-            border-gray-300 dark:border-darkBorder
-            focus:outline-none"
-            value={formData.email}
+            className="w-full p-3 rounded-lg border"
             onChange={handleChange}
             required
           />
 
-          {/* Password */}
-          <div className="relative">
-            <input
-              type={showPassword ? "text" : "password"}
-              name="password"
-              placeholder="Password"
-              className="w-full p-3 rounded-lg border
-              bg-white dark:bg-darkBg
-              border-gray-300 dark:border-darkBorder"
-              value={formData.password}
-              onChange={handleChange}
-              required
-            />
-            <span
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-3 cursor-pointer text-gray-500 dark:text-gray-400"
-            >
-              {showPassword ? <FaEyeSlash /> : <FaEye />}
-            </span>
-          </div>
-
-          {/* Strength Indicator */}
-          {!isLogin && formData.password && (
-            <p className="text-sm">
-              Strength:{" "}
-              <span
-                className={
-                  passwordStrength === "Weak"
-                    ? "text-red-500"
-                    : passwordStrength === "Medium"
-                    ? "text-yellow-500"
-                    : "text-green-500"
-                }
-              >
-                {passwordStrength}
-              </span>
-            </p>
-          )}
-
-          {/* Confirm Password */}
-          {!isLogin && (
-            <div className="relative">
-              <input
-                type={showConfirmPassword ? "text" : "password"}
-                name="confirmPassword"
-                placeholder="Confirm Password"
-                className="w-full p-3 rounded-lg border
-                bg-white dark:bg-darkBg
-                border-gray-300 dark:border-darkBorder"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                required
-              />
-              <span
-                onClick={() =>
-                  setShowConfirmPassword(!showConfirmPassword)
-                }
-                className="absolute right-3 top-3 cursor-pointer text-gray-500 dark:text-gray-400"
-              >
-                {showConfirmPassword ? <FaEyeSlash /> : <FaEye />}
-              </span>
-            </div>
-          )}
+          <input
+            type="password"
+            name="password"
+            placeholder="Password"
+            className="w-full p-3 rounded-lg border"
+            onChange={handleChange}
+            required
+          />
 
           <button
             type="submit"
-            className="w-full py-3 rounded-xl font-semibold
-            bg-lightAccent text-white
-            dark:bg-darkAccent dark:text-black
-            hover:scale-105 transition"
+            className="w-full py-3 rounded-xl bg-lightAccent text-white"
           >
             {isLogin ? "Login" : "Sign Up"}
           </button>
         </form>
 
-        {/* Divider */}
-        <div className="flex items-center my-6">
-          <div className="flex-grow border-t border-gray-300 dark:border-darkBorder"></div>
-          <span className="mx-3 text-sm text-lightMuted dark:text-gray-400">
-            OR
-          </span>
-          <div className="flex-grow border-t border-gray-300 dark:border-darkBorder"></div>
-        </div>
+        <div className="my-6 text-center">OR</div>
 
-        {/* Google Button */}
         <button
-          className="w-full flex items-center justify-center gap-3
-          p-3 rounded-xl border
-          border-gray-300 dark:border-darkBorder
-          hover:bg-gray-100 dark:hover:bg-darkCard
-          transition"
+          onClick={handleGoogleLogin}
+          className="w-full flex items-center justify-center gap-3 p-3 rounded-xl border"
         >
           <FcGoogle size={22} />
           Continue with Google
         </button>
 
-        {/* Toggle */}
-        <p className="text-center mt-6 text-sm text-lightMuted dark:text-gray-400">
-          {isLogin ? "Don't have an account?" : "Already have an account?"}
+        <p className="text-center mt-6 text-sm">
+          {isLogin ? "Don't have an account?" : "Already have one?"}
           <span
             onClick={() => setIsLogin(!isLogin)}
-            className="ml-1 cursor-pointer font-medium
-            text-lightAccent dark:text-darkAccent"
+            className="ml-1 cursor-pointer text-lightAccent"
           >
             {isLogin ? "Sign Up" : "Login"}
           </span>
         </p>
-
       </div>
     </div>
   );
