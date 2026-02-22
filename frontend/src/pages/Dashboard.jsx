@@ -2,28 +2,33 @@ import { useEffect, useState } from "react";
 import AppLayout from "../components/layout/AppLayout";
 import API from "../services/Api";
 import PortfolioChart from "../components/dashboard/PortfolioChart";
+import { auth } from "../firebase";
+import { onAuthStateChanged } from "firebase/auth";
 
 export default function Dashboard() {
-
   const [portfolio, setPortfolio] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  const userId = "6990d35cc2fae37338b34a23";
-
   useEffect(() => {
-    const fetchPortfolio = async () => {
+    const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
+      if (!firebaseUser) {
+        setLoading(false);
+        return;
+      }
+
       try {
-        const res = await API.get(`/portfolio/${userId}`);
+        const res = await API.get(`/portfolio/${firebaseUser.uid}`);
         setPortfolio(res.data);
       } catch (err) {
+        console.error(err);
         setError("Failed to load portfolio.");
       } finally {
         setLoading(false);
       }
-    };
+    });
 
-    fetchPortfolio();
+    return () => unsubscribe();
   }, []);
 
   const formatCurrency = (num) =>
@@ -47,6 +52,16 @@ export default function Dashboard() {
       <AppLayout title="Dashboard">
         <div className="text-center mt-20 text-red-500">
           {error}
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!portfolio) {
+    return (
+      <AppLayout title="Dashboard">
+        <div className="text-center mt-20">
+          No portfolio found.
         </div>
       </AppLayout>
     );
@@ -156,4 +171,3 @@ function SummaryCard({ title, value, highlight, positive }) {
     </div>
   );
 }
-

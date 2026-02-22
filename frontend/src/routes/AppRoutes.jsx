@@ -5,10 +5,7 @@ import Dashboard from "../pages/Dashboard";
 import Market from "../pages/Market";
 import StockDetails from "../pages/StockDetails";
 import ProtectedRoute from "../components/ProtectedRoute";
-
-function Placeholder({ title }) {
-  return <div className="p-10">{title} Page Coming Soon</div>;
-}
+import Portfolio from "../pages/Portfolio";
 
 export default function AppRoutes() {
   return (
@@ -51,7 +48,7 @@ export default function AppRoutes() {
           path="/portfolio"
           element={
             <ProtectedRoute>
-              <Placeholder title="Portfolio" />
+              <Portfolio />
             </ProtectedRoute>
           }
         />
@@ -60,7 +57,7 @@ export default function AppRoutes() {
           path="/settings"
           element={
             <ProtectedRoute>
-              <Placeholder title="Settings" />
+              <div className="p-10">Settings Page Coming Soon</div>
             </ProtectedRoute>
           }
         />

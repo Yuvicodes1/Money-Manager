@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import AppLayout from "../components/layout/AppLayout";
 import API from "../services/Api";
+import { auth } from "../firebase";
 import {
   LineChart,
   Line,
@@ -24,9 +25,6 @@ export default function StockDetails() {
   const [showModal, setShowModal] = useState(false);
   const [quantity, setQuantity] = useState(1);
   const [buyPrice, setBuyPrice] = useState("");
-
-  // TEMP: Replace after Firebase integration
-  const userId = localStorage.getItem("userId");
 
   // ===============================
   // Fetch Historical Data
@@ -54,7 +52,7 @@ export default function StockDetails() {
 
     const interval = setInterval(() => {
       fetchHistory();
-    }, 30 * 60 * 1000); // refresh every 30 min
+    }, 30 * 60 * 1000);
 
     return () => clearInterval(interval);
   }, [symbol, range]);
@@ -63,7 +61,9 @@ export default function StockDetails() {
   // Add to Portfolio
   // ===============================
   const handleAddToPortfolio = async () => {
-    if (!userId) {
+    const firebaseUser = auth.currentUser;
+
+    if (!firebaseUser) {
       alert("Please login first.");
       navigate("/login");
       return;
@@ -81,18 +81,18 @@ export default function StockDetails() {
 
     try {
       await API.post("/portfolio/add-stock", {
-        userId,
+        firebaseUID: firebaseUser.uid,
         symbol,
         quantity: Number(quantity),
         buyPrice: Number(buyPrice),
       });
 
-      // Reset modal
       setQuantity(1);
       setBuyPrice("");
       setShowModal(false);
 
       navigate("/dashboard");
+
     } catch (error) {
       console.error("Add stock error:", error);
       alert("Failed to add stock.");
@@ -127,7 +127,7 @@ export default function StockDetails() {
           ))}
         </div>
 
-        {/* Chart Section */}
+        {/* Chart */}
         {loading ? (
           <p className="text-center py-10">Loading chart...</p>
         ) : error ? (
@@ -149,7 +149,6 @@ export default function StockDetails() {
           </ResponsiveContainer>
         )}
 
-        {/* Add Button */}
         <button
           onClick={() => setShowModal(true)}
           className="mt-8 px-6 py-3 rounded-xl
@@ -161,9 +160,7 @@ export default function StockDetails() {
         </button>
       </div>
 
-      {/* ===============================
-            Add Stock Modal
-      =============================== */}
+      {/* Modal */}
       {showModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/40 z-50">
           <div className="bg-white dark:bg-darkCard p-8 rounded-2xl w-96">

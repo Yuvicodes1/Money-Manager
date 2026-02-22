@@ -1,9 +1,23 @@
 import { useContext } from "react";
 import { ThemeContext } from "../../context/ThemeContext";
 import { FaMoon, FaSun } from "react-icons/fa";
+import { signOut } from "firebase/auth";
+import { auth } from "../../firebase";
+import { useNavigate } from "react-router-dom";
 
 export default function Topbar({ title }) {
   const { darkMode, setDarkMode } = useContext(ThemeContext);
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      localStorage.removeItem("userId"); // remove Mongo id
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
+  };
 
   return (
     <header
@@ -41,6 +55,16 @@ export default function Topbar({ title }) {
         >
           U
         </div>
+
+        {/* Logout Button */}
+        <button
+          onClick={handleLogout}
+          className="px-4 py-2 rounded-lg
+          bg-red-500 text-white
+          hover:bg-red-600 transition"
+        >
+          Logout
+        </button>
 
       </div>
     </header>
