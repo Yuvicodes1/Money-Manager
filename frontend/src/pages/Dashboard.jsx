@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import AppLayout from "../components/layout/Applayout";
 import API from "../services/api";
+import PortfolioChart from "../components/dashboard/PortfolioChart";
 
 export default function Dashboard() {
 
@@ -122,6 +123,8 @@ export default function Dashboard() {
         </table>
       </div>
 
+      <PortfolioChart stocks={portfolio.stocks} />
+
     </AppLayout>
   );
 }
@@ -153,3 +156,4 @@ function SummaryCard({ title, value, highlight, positive }) {
     </div>
   );
 }
+

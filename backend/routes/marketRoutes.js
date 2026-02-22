@@ -5,6 +5,6 @@ const { searchStock, getHistoricalData } = require("../controllers/marketControl
 
 router.get("/search", searchStock);
 router.get("/history", getHistoricalData);
-
+router.get("/top", getTopStocks);
 module.exports = router;
  

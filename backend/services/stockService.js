@@ -5,65 +5,119 @@ const axios = require("axios");
 const { getFromCache, setCache } = require("../utils/cache");
 
 // Get API key from environment variables
-const API_KEY = process.env.ALPHA_VANTAGE_API_KEY;
+const API_KEY = process.env.FINNHUB_API_KEY;
 
 // Log API key to verify it loaded correctly
-console.log("Loaded API Key:", process.env.ALPHA_VANTAGE_API_KEY);
+console.log("Loaded Finnhub API Key:", API_KEY);
 
 
+// ==============================
 // Function to get current stock price
+// ==============================
 exports.getCurrentStockPrice = async (symbol) => {
   try {
 
-    // Check if price exists in cache
+    // 1️⃣ Check cache first
     const cachedPrice = getFromCache(symbol);
     if (cachedPrice) {
       console.log("Cache hit for:", symbol);
       return cachedPrice;
     }
 
-    console.log("Fetching from API:", symbol);
+    console.log("Fetching from Finnhub:", symbol);
 
-    // Call Alpha Vantage API
+    // 2️⃣ Call Finnhub Quote API
     const response = await axios.get(
-      `https://www.alphavantage.co/query`,
+      "https://finnhub.io/api/v1/quote",
       {
         params: {
-          function: "GLOBAL_QUOTE", // API function
-          symbol: symbol,          // Stock symbol
-          apikey: API_KEY          // API key
+          symbol: symbol,
+          token: API_KEY,
         },
-        timeout: 5000 // 5 sec timeout
+        timeout: 5000
       }
     );
 
-    // Extract quote data
-    const quote = response.data["Global Quote"];
+    /*
+      Finnhub Response Example:
+      {
+        c: 189.30,   // current price
+        h: 190.20,
+        l: 187.00,
+        o: 188.00,
+        pc: 185.00
+      }
+    */
 
-    // Handle empty response
-    if (!quote || Object.keys(quote).length === 0) {
-      console.log("Empty quote response:", response.data);
+    const price = response.data.c;
+
+    // 3️⃣ Validate price
+    if (!price || isNaN(price)) {
+      console.log("Invalid price response:", response.data);
       return 0;
     }
 
-    // Convert price to number
-    const price = parseFloat(quote["05. price"]);
-
-    // Return 0 if invalid price
-    if (isNaN(price)) {
-      return 0;
-    }
-
-    // Store price in cache
+    // 4️⃣ Store in cache
     setCache(symbol, price);
 
-    // Return stock price
     return price;
 
   } catch (error) {
 
-    // Handle API errors safely
-    console.error("Stock API error:", error.message);
+    console.error("Finnhub API error:", error.message);
     return 0;
+  }
+};
+
+
+
+// ==============================
+// Function to get historical stock data
+// ==============================
+exports.getStockHistory = async (symbol) => {
+  try {
+
+    const now = Math.floor(Date.now() / 1000);
+    const oneMonthAgo = now - 60 * 60 * 24 * 30;
+
+    const response = await axios.get(
+      "https://finnhub.io/api/v1/stock/candle",
+      {
+        params: {
+          symbol: symbol,
+          resolution: "D",  // Daily candles
+          from: oneMonthAgo,
+          to: now,
+          token: API_KEY,
+        },
+        timeout: 5000
+      }
+    );
+
+    /*
+      Response example:
+      {
+        c: [prices],
+        t: [timestamps],
+        s: "ok"
+      }
+    */
+
+    if (response.data.s !== "ok") {
+      console.log("No historical data found.");
+      return [];
+    }
+
+    // Convert Finnhub format into clean array
+    const history = response.data.t.map((timestamp, index) => ({
+      date: new Date(timestamp * 1000),
+      price: response.data.c[index],
+    }));
+
+    return history;
+
+  } catch (error) {
+    console.error("History API error:", error.message);
+    return [];
   }
 };
