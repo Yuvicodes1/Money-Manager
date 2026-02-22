@@ -9,12 +9,19 @@ const {
   removeStock
 } = require("../controllers/portfolioController");
 
-
+// Create portfolio (if not exists)
 router.post("/", createPortfolio);
-router.post("/add-stock", addStock);
-router.get("/:userId", getPortfolio);
-router.put("/update-stock", updateStock);
-router.delete("/remove-stock", removeStock);
 
+// Add stock
+router.post("/add-stock", addStock);
+
+// 🔥 Updated to use firebaseUID
+router.get("/:firebaseUID", getPortfolio);
+
+// Update stock
+router.put("/update-stock", updateStock);
+
+// Remove stock
+router.delete("/remove-stock", removeStock);
 
 module.exports = router;

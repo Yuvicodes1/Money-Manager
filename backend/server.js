@@ -29,3 +29,6 @@ app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
 
 app.use("/api/users", userRoutes);
 app.use("/api/portfolio", portfolioRoutes);
+
+const errorHandler = require("./middleware/errorHandler");
+app.use(errorHandler);
