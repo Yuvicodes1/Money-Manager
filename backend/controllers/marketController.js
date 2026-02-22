@@ -28,20 +28,6 @@ exports.searchStock = asyncHandler(async (req, res) => {
     }
   );
 
-  /*
-    Finnhub search response example:
-    {
-      result: [
-        {
-          description: "APPLE INC",
-          displaySymbol: "AAPL",
-          symbol: "AAPL",
-          type: "Common Stock"
-        }
-      ]
-    }
-  */
-
   res.status(200).json({
     success: true,
     data: response.data.result
@@ -51,10 +37,10 @@ exports.searchStock = asyncHandler(async (req, res) => {
 
 
 // ======================================================
-// 📈 GET HISTORICAL DATA (Finnhub Candle API)
+// 📈 GET HISTORICAL DATA (Yahoo Finance)
 // ======================================================
 exports.getHistoricalData = asyncHandler(async (req, res) => {
-  const { symbol } = req.query;
+  const { symbol, range } = req.query;
 
   if (!symbol) {
     const error = new Error("Symbol is required");
@@ -62,57 +48,45 @@ exports.getHistoricalData = asyncHandler(async (req, res) => {
     throw error;
   }
 
+  // 🔹 Map frontend range → Yahoo range
+  let yahooRange = "1mo";
+  if (range === "6M") yahooRange = "6mo";
+  if (range === "1Y") yahooRange = "1y";
+
+  const cacheKey = `history_${symbol}_${yahooRange}`;
+
   // ✅ Check cache first
-  const cached = getFromCache(`history_${symbol}`);
+  const cached = getFromCache(cacheKey);
   if (cached) {
-    console.log("History cache hit:", symbol);
+    console.log("Yahoo history cache hit:", symbol);
     return res.status(200).json({
       success: true,
       data: cached
     });
   }
 
-  const now = Math.floor(Date.now() / 1000);
-  const oneMonthAgo = now - 60 * 60 * 24 * 30;
+  const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbol}?range=${yahooRange}&interval=1d`;
 
-  const response = await axios.get(
-    "https://finnhub.io/api/v1/stock/candle",
-    {
-      params: {
-        symbol,
-        resolution: "D",
-        from: oneMonthAgo,
-        to: now,
-        token: API_KEY
-      }
-    }
-  );
+  const response = await axios.get(url);
 
-  /*
-    Finnhub candle response:
-    {
-      c: [close prices],
-      t: [timestamps],
-      s: "ok"
-    }
-  */
-
-  if (response.data.s !== "ok") {
-    console.log("No historical data found:", response.data);
-
+  if (!response.data.chart || !response.data.chart.result) {
     return res.status(200).json({
       success: true,
       data: []
     });
   }
 
-  const formattedData = response.data.t.map((timestamp, index) => ({
-    date: new Date(timestamp * 1000).toISOString().split("T")[0],
-    close: response.data.c[index]
+  const result = response.data.chart.result[0];
+  const timestamps = result.timestamp;
+  const closes = result.indicators.quote[0].close;
+
+  const formattedData = timestamps.map((time, index) => ({
+    date: new Date(time * 1000).toISOString().split("T")[0],
+    close: closes[index]
   }));
 
   // ✅ Save to cache
-  setCache(`history_${symbol}`, formattedData);
+  setCache(cacheKey, formattedData);
 
   res.status(200).json({
     success: true,
@@ -120,30 +94,39 @@ exports.getHistoricalData = asyncHandler(async (req, res) => {
   });
 });
 
+
+
+// ======================================================
+// 📊 GET TOP STOCKS (Finnhub Quotes)
+// ======================================================
 exports.getTopStocks = asyncHandler(async (req, res) => {
+  const symbols = [
+    "AAPL","MSFT","GOOGL","AMZN","TSLA",
+    "NVDA","META","NFLX","AMD","INTC",
+    "ORCL","IBM","ADBE","CRM","PYPL",
+    "UBER","SHOP","SQ","BABA",
+    "NKE","DIS","KO","PEP","WMT",
+    "COST","HD","MCD",
+    "PFE","JNJ","MRK",
+    "XOM","BA","CAT",
+    "PLTR","SNOW",
+    "SPOT","ZM",
+    "PANW","CRWD","DDOG",
+    "ASML","QCOM","AVGO"
+  ];
 
-  const symbols = ["AAPL", "MSFT", "GOOGL", "AMZN", "TSLA"];
-
-  const results = [];
-
-  for (const symbol of symbols) {
-    const response = await axios.get(
-      "https://finnhub.io/api/v1/quote",
-      {
-        params: {
-          symbol,
-          token: process.env.FINNHUB_API_KEY
-        }
-      }
-    );
-
-    results.push({
+  const requests = symbols.map(symbol =>
+    axios.get("https://finnhub.io/api/v1/quote", {
+      params: { symbol, token: API_KEY }
+    }).then(response => ({
       symbol,
       currentPrice: response.data.c,
       change: response.data.d,
       percentChange: response.data.dp
-    });
-  }
+    })).catch(() => null) // ignore failed symbols
+  );
+
+  const results = (await Promise.all(requests)).filter(Boolean);
 
   res.status(200).json({
     success: true,

@@ -1,73 +1,111 @@
 const Portfolio = require("../models/Portfolio");
+const User = require("../models/User");
 const { getCurrentStockPrice } = require("../services/stockService");
 
+// ===============================
 // Create portfolio (if not exists)
+// ===============================
 exports.createPortfolio = async (req, res) => {
   try {
-    const { userId } = req.body;
+    const { firebaseUID } = req.body;
 
-    const existingPortfolio = await Portfolio.findOne({ user: userId });
-
-    if (existingPortfolio) {
-      return res.status(200).json(existingPortfolio);
+    const user = await User.findOne({ firebaseUID });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
 
-    const newPortfolio = await Portfolio.create({
-      user: userId,
-      stocks: []
-    });
+    let portfolio = await Portfolio.findOne({ user: user._id });
 
-    res.status(201).json(newPortfolio);
+    if (!portfolio) {
+      portfolio = await Portfolio.create({
+        user: user._id,
+        stocks: []
+      });
+    }
+
+    res.status(200).json(portfolio);
 
   } catch (error) {
-    console.error(error);
+    console.error("Create Portfolio Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
 
-// Add stock to portfolio
+
+// ===============================
+// Add stock (Supports Custom)
+// ===============================
 exports.addStock = async (req, res) => {
   try {
-    const { userId, symbol, quantity, buyPrice } = req.body;
+    const { firebaseUID, symbol, quantity, buyPrice, estSellPrice, isCustom } = req.body;
 
-    const portfolio = await Portfolio.findOne({ user: userId });
+    const user = await User.findOne({ firebaseUID });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    if (!portfolio) {
-      return res.status(404).json({ message: "Portfolio not found" });
-    }
+    const portfolio = await Portfolio.findOne({ user: user._id });
+    if (!portfolio) return res.status(404).json({ message: "Portfolio not found" });
 
-    portfolio.stocks.push({ symbol, quantity, buyPrice });
+    portfolio.stocks.push({
+      symbol,
+      quantity,
+      buyPrice,
+      estSellPrice: isCustom ? estSellPrice : null,
+      isCustom: isCustom || false
+    });
 
     await portfolio.save();
 
     res.status(200).json(portfolio);
 
   } catch (error) {
-    console.error(error);
+    console.error("Add Stock Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
 
-// Get portfolio
+
+// ===============================
+// Get portfolio (Supports Custom)
+// ===============================
 exports.getPortfolio = async (req, res) => {
   try {
-    const { userId } = req.params;
+    const { firebaseUID } = req.params;
 
-    const portfolio = await Portfolio.findOne({ user: userId }).populate("user");
+    const user = await User.findOne({ firebaseUID });
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
 
+    let portfolio = await Portfolio.findOne({ user: user._id });
+
+    // Auto create if missing
     if (!portfolio) {
-      return res.status(404).json({ message: "Portfolio not found" });
+      portfolio = await Portfolio.create({
+        user: user._id,
+        stocks: []
+      });
     }
 
     let totalInvested = 0;
     let totalCurrentValue = 0;
-
     const enrichedStocks = [];
-    console.log("Portfolio Stocks:", portfolio.stocks);
 
     for (const stock of portfolio.stocks) {
-      const currentPrice = await getCurrentStockPrice(stock.symbol);
-      console.log("Processing stock:", stock.symbol);
+
+      let currentPrice = 0;
+
+      // ✅ If custom asset → use estimated sell price
+      if (stock.isCustom) {
+        currentPrice = stock.estSellPrice || stock.buyPrice;
+      } else {
+        // ✅ Normal stock → fetch live price
+        try {
+          currentPrice = await getCurrentStockPrice(stock.symbol);
+        } catch (err) {
+          console.log("Live price fetch failed:", stock.symbol);
+          currentPrice = stock.buyPrice;
+        }
+      }
 
       const investedAmount = stock.quantity * stock.buyPrice;
       const currentValue = stock.quantity * currentPrice;
@@ -83,14 +121,17 @@ exports.getPortfolio = async (req, res) => {
         currentPrice,
         investedAmount,
         currentValue,
-        profitLoss
+        profitLoss,
+        isCustom: stock.isCustom || false,
+        estSellPrice: stock.estSellPrice || null
       });
     }
 
-    const totalProfitLoss = parseFloat((totalCurrentValue - totalInvested).toFixed(2));
+    const totalProfitLoss = parseFloat(
+      (totalCurrentValue - totalInvested).toFixed(2)
+    );
 
     res.status(200).json({
-      user: portfolio.user,
       stocks: enrichedStocks,
       summary: {
         totalInvested,
@@ -100,113 +141,66 @@ exports.getPortfolio = async (req, res) => {
     });
 
   } catch (error) {
-    console.error(error);
+    console.error("Get Portfolio Error:", error);
     res.status(500).json({ message: "Server error" });
   }
 };
 
-// Update stock in portfolio
+
+// ===============================
+// Update stock
+// ===============================
 exports.updateStock = async (req, res) => {
   try {
-    const { userId, symbol, quantity, buyPrice } = req.body;
+    const { firebaseUID, symbol, quantity, buyPrice, estSellPrice } = req.body;
 
-    if (!userId || !symbol) {
-      return res.status(400).json({
-        success: false,
-        message: "userId and symbol are required"
-      });
-    }
+    const user = await User.findOne({ firebaseUID });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    const portfolio = await Portfolio.findOne({ user: userId });
+    const portfolio = await Portfolio.findOne({ user: user._id });
+    if (!portfolio) return res.status(404).json({ message: "Portfolio not found" });
 
-    if (!portfolio) {
-      return res.status(404).json({
-        success: false,
-        message: "Portfolio not found"
-      });
-    }
+    const stock = portfolio.stocks.find(s => s.symbol === symbol);
+    if (!stock) return res.status(404).json({ message: "Stock not found" });
 
-    const stock = portfolio.stocks.find(
-      (s) => s.symbol === symbol
-    );
-
-    if (!stock) {
-      return res.status(404).json({
-        success: false,
-        message: "Stock not found in portfolio"
-      });
-    }
-
-    if (quantity !== undefined) {
-      stock.quantity = quantity;
-    }
-
-    if (buyPrice !== undefined) {
-      stock.buyPrice = buyPrice;
-    }
+    if (quantity !== undefined) stock.quantity = quantity;
+    if (buyPrice !== undefined) stock.buyPrice = buyPrice;
+    if (estSellPrice !== undefined) stock.estSellPrice = estSellPrice;
 
     await portfolio.save();
 
-    return res.status(200).json({
-      success: true,
-      message: "Stock updated successfully"
-    });
+    res.status(200).json({ message: "Stock updated successfully" });
 
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      success: false,
-      message: "Server error"
-    });
+    console.error("Update Stock Error:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
 
-//remove stock from portfolio
+
+// ===============================
+// Remove stock
+// ===============================
 exports.removeStock = async (req, res) => {
   try {
-    const { userId, symbol } = req.body;
+    const { firebaseUID, symbol } = req.body;
 
-    if (!userId || !symbol) {
-      return res.status(400).json({
-        success: false,
-        message: "userId and symbol are required"
-      });
-    }
+    const user = await User.findOne({ firebaseUID });
+    if (!user) return res.status(404).json({ message: "User not found" });
 
-    const portfolio = await Portfolio.findOne({ user: userId });
-
-    if (!portfolio) {
-      return res.status(404).json({
-        success: false,
-        message: "Portfolio not found"
-      });
-    }
-
-    const initialLength = portfolio.stocks.length;
+    const portfolio = await Portfolio.findOne({ user: user._id });
+    if (!portfolio) return res.status(404).json({ message: "Portfolio not found" });
 
     portfolio.stocks = portfolio.stocks.filter(
-      (stock) => stock.symbol !== symbol
+      stock => stock.symbol !== symbol
     );
-
-    if (portfolio.stocks.length === initialLength) {
-      return res.status(404).json({
-        success: false,
-        message: "Stock not found in portfolio"
-      });
-    }
 
     await portfolio.save();
 
-    return res.status(200).json({
-      success: true,
-      message: "Stock removed successfully"
-    });
+    res.status(200).json({ message: "Stock removed successfully" });
 
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({
-      success: false,
-      message: "Server error"
-    });
+    console.error("Remove Stock Error:", error);
+    res.status(500).json({ message: "Server error" });
   }
 };
