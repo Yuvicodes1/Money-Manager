@@ -1,15 +1,16 @@
 const cacheStore = {};
 
-const TTL = 60 * 1000; // 60 seconds
+const DEFAULT_TTL = 60 * 1000;       // 60 seconds  — individual stock prices
+const TOP_STOCKS_TTL = 5 * 60 * 1000; // 5 minutes   — full batch of 42 symbols
 
-//this part is used to retrieve a value from the cache based on a key. It checks if the cached value exists and if it has not expired based on the defined TTL (Time To Live). If the cached value is valid, it returns the value; otherwise, it returns null.
+/**
+ * Retrieve a value from cache. Returns null if missing or expired.
+ */
 exports.getFromCache = (key) => {
   const cached = cacheStore[key];
-
   if (!cached) return null;
 
-  const isExpired = Date.now() - cached.timestamp > TTL;
-
+  const isExpired = Date.now() - cached.timestamp > cached.ttl;
   if (isExpired) {
     delete cacheStore[key];
     return null;
@@ -18,10 +19,23 @@ exports.getFromCache = (key) => {
   return cached.value;
 };
 
-//this part is used to set the cache for a specific key with a value. It stores the value along with a timestamp of when it was set. The timestamp is used to determine if the cached value has expired based on the defined TTL (Time To Live).
-exports.setCache = (key, value) => {
+/**
+ * Store a value in cache.
+ * @param {string} key
+ * @param {*} value
+ * @param {number} ttl  - Time to live in ms. Defaults to 60 seconds.
+ */
+exports.setCache = (key, value, ttl = DEFAULT_TTL) => {
   cacheStore[key] = {
     value,
-    timestamp: Date.now()
+    timestamp: Date.now(),
+    ttl,
   };
+};
+
+// Export TTL constants so controllers can reference them by name
+exports.TTL = {
+  DEFAULT: DEFAULT_TTL,
+  TOP_STOCKS: TOP_STOCKS_TTL,
+  HISTORY: 15 * 60 * 1000, // 15 minutes — historical chart data
 };
