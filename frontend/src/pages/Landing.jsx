@@ -58,7 +58,7 @@ export default function Landing() {
         flex justify-between items-center px-12 py-5"
       >
         <h1 className="text-3xl font-bold tracking-tight text-lightAccent dark:text-darkAccent">
-          MONEYFORGE
+          FinTrack
         </h1>
 
         <div className="flex items-center gap-5">
@@ -205,7 +205,7 @@ export default function Landing() {
           {/* Brand */}
           <div>
             <h3 className="text-xl font-bold mb-4 text-lightAccent dark:text-darkAccent">
-              MoneyForge
+              FinTrack
             </h3>
             <p className="text-lightMuted dark:text-gray-400 text-sm">
               A professional real-time portfolio management platform
@@ -259,7 +259,7 @@ export default function Landing() {
           border-t border-gray-300 dark:border-darkBorder
           text-lightMuted dark:text-gray-500"
         >
-          © {new Date().getFullYear()}  MoneyForge. All rights reserved.
+          © {new Date().getFullYear()}  FinTrack. All rights reserved.
         </div>
       </footer>
 
@@ -292,11 +292,11 @@ export default function Landing() {
             </button>
 
             <h2 className="text-2xl font-bold mb-6 pr-8 text-lightAccent dark:text-darkAccent">
-              About MoneyForge
+              About FinTrack
             </h2>
 
             <p className="mb-4 text-lightMuted dark:text-gray-400">
-              MoneyForge is an enterprise-grade portfolio management platform
+              FinTrack is an enterprise-grade portfolio management platform
               designed to deliver real-time stock insights, automated analytics,
               and historical data visualization.
             </p>

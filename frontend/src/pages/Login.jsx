@@ -49,7 +49,7 @@ const Login = () => {
       });
 
       localStorage.setItem("userId", res.data._id);
-      navigate("/dashboard");
+      navigate("/home");
 
     } catch (err) {
       console.error(err);
@@ -70,7 +70,7 @@ const Login = () => {
       });
 
       localStorage.setItem("userId", res.data._id);
-      navigate("/dashboard");
+      navigate("/home");
 
     } catch (err) {
       console.error(err);

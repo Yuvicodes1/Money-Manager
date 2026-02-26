@@ -70,7 +70,7 @@ export default function Sidebar() {
         <div className="mb-10 cursor-pointer" onClick={() => navigate("/dashboard")}>
           <h2 className="text-2xl font-bold text-lightAccent dark:text-darkAccent
             hover:opacity-80 transition">
-            Stock Manager
+            FinTrack
           </h2>
         </div>
 
@@ -90,7 +90,7 @@ export default function Sidebar() {
             className="text-xl font-bold text-lightAccent dark:text-darkAccent cursor-pointer"
             onClick={() => { setMobileOpen(false); navigate("/dashboard"); }}
           >
-            Stock Manager
+            MONEYFORGE
           </h2>
 
           <button

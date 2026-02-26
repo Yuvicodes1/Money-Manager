@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Landing from "../pages/Landing";
+import HomePage from "../pages/Homepage";
 import Login from "../pages/Login";
 import Dashboard from "../pages/Dashboard";
 import Market from "../pages/Market";
@@ -17,6 +18,11 @@ export default function AppRoutes() {
         {/* Public Routes */}
         <Route path="/" element={<Landing />} />
         <Route path="/login" element={<Login />} />
+
+        {/* Post-login home — bifurcation page */}
+        <Route path="/home" element={
+          <ProtectedRoute><HomePage /></ProtectedRoute>
+        } />
 
         {/* Protected Routes */}
         <Route path="/dashboard" element={
