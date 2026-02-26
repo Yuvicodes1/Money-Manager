@@ -1,22 +1,43 @@
-import { useContext } from "react";
+import { useContext, useState, useRef, useEffect } from "react";
 import { ThemeContext } from "../../context/ThemeContext";
-import { FaMoon, FaSun } from "react-icons/fa";
+import { FaMoon, FaSun, FaChevronDown } from "react-icons/fa";
 import { signOut } from "firebase/auth";
 import { auth } from "../../firebase";
 import { useNavigate } from "react-router-dom";
+import { useCurrency, CURRENCIES } from "../../context/CurrencyContext";
 
 export default function Topbar({ title }) {
   const { darkMode, setDarkMode } = useContext(ThemeContext);
+  const { currency, currencyMeta, setCurrency } = useCurrency();
   const navigate = useNavigate();
+
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  // ── Close dropdown on outside click ──────────────────────────────────────
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleLogout = async () => {
     try {
       await signOut(auth);
-      localStorage.removeItem("userId"); // remove Mongo id
+      localStorage.removeItem("userId");
       navigate("/login");
     } catch (error) {
       console.error("Logout error:", error);
     }
+  };
+
+  const handleCurrencySelect = async (code) => {
+    await setCurrency(code);
+    setDropdownOpen(false);
   };
 
   return (
@@ -29,12 +50,55 @@ export default function Topbar({ title }) {
       sticky top-0 z-40"
     >
       {/* Page Title */}
-      <h1 className="text-2xl font-semibold">
-        {title}
-      </h1>
+      <h1 className="text-2xl font-semibold">{title}</h1>
 
       {/* Right Controls */}
-      <div className="flex items-center gap-6">
+      <div className="flex items-center gap-4">
+
+        {/* ── Currency Selector ─────────────────────────────────────────── */}
+        <div className="relative" ref={dropdownRef}>
+          <button
+            onClick={() => setDropdownOpen((prev) => !prev)}
+            className="flex items-center gap-2 px-3 py-2 rounded-lg border
+            border-gray-300 dark:border-darkBorder
+            bg-white dark:bg-darkCard
+            hover:bg-gray-100 dark:hover:bg-darkBg
+            text-sm font-medium transition"
+          >
+            <span>{currencyMeta.symbol}</span>
+            <span>{currency}</span>
+            <FaChevronDown
+              size={10}
+              className={`transition-transform duration-200 ${dropdownOpen ? "rotate-180" : ""}`}
+            />
+          </button>
+
+          {/* Dropdown menu */}
+          {dropdownOpen && (
+            <div
+              className="absolute right-0 mt-2 w-48 rounded-xl shadow-lg
+              bg-white dark:bg-darkCard
+              border border-gray-200 dark:border-darkBorder
+              overflow-hidden z-50"
+            >
+              {Object.values(CURRENCIES).map((c) => (
+                <button
+                  key={c.code}
+                  onClick={() => handleCurrencySelect(c.code)}
+                  className={`w-full text-left px-4 py-3 text-sm flex items-center gap-3
+                  transition hover:bg-gray-100 dark:hover:bg-darkBg
+                  ${currency === c.code
+                    ? "text-lightAccent dark:text-darkAccent font-semibold"
+                    : "text-lightText dark:text-darkText"
+                  }`}
+                >
+                  <span className="text-base w-5">{c.symbol}</span>
+                  <span>{c.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* Theme Toggle */}
         <button
@@ -46,7 +110,7 @@ export default function Topbar({ title }) {
           {darkMode ? <FaSun /> : <FaMoon />}
         </button>
 
-        {/* User Avatar Placeholder */}
+        {/* User Avatar */}
         <div
           className="w-9 h-9 rounded-full
           bg-lightAccent dark:bg-darkAccent
@@ -56,7 +120,7 @@ export default function Topbar({ title }) {
           U
         </div>
 
-        {/* Logout Button */}
+        {/* Logout */}
         <button
           onClick={handleLogout}
           className="px-4 py-2 rounded-lg

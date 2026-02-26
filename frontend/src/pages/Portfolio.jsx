@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useCurrency } from "../context/CurrencyContext";
 import API from "../services/Api";
 import AddInvestmentModal from "../components/AddInvestmentModal";
 import EditStockModal from "../components/EditStockModal";
@@ -7,6 +8,7 @@ import AppLayout from "../components/layout/AppLayout";
 
 const Portfolio = () => {
   const { user, authLoading } = useAuth();
+  const { currencyMeta } = useCurrency();
   const [portfolio, setPortfolio] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -107,13 +109,13 @@ const Portfolio = () => {
             </h3>
             <div className="space-y-1 text-gray-700 dark:text-gray-300">
               <p>Quantity: {stock.quantity}</p>
-              <p>Buy Price: ₹{stock.buyPrice}</p>
-              <p>Current Price: ₹{stock.currentPrice}</p>
+              <p>Buy Price: {currencyMeta.symbol}{stock.buyPrice}</p>
+              <p>Current Price: {currencyMeta.symbol}{stock.currentPrice}</p>
             </div>
             <p className="mt-4 font-semibold">
               P/L:{" "}
               <span className={stock.profitLoss >= 0 ? "text-green-500" : "text-red-500"}>
-                ₹{stock.profitLoss}
+                {currencyMeta.symbol}{stock.profitLoss}
               </span>
             </p>
             {stock.isCustom && (
@@ -133,16 +135,16 @@ const Portfolio = () => {
         <div className="grid md:grid-cols-3 gap-6">
           <div>
             <p className="text-gray-500 dark:text-gray-400 text-sm">Total Invested</p>
-            <p className="text-lg font-semibold text-gray-800 dark:text-white">₹{portfolio?.summary?.totalInvested}</p>
+            <p className="text-lg font-semibold text-gray-800 dark:text-white">{currencyMeta.symbol}{portfolio?.summary?.totalInvested}</p>
           </div>
           <div>
             <p className="text-gray-500 dark:text-gray-400 text-sm">Current Value</p>
-            <p className="text-lg font-semibold text-gray-800 dark:text-white">₹{portfolio?.summary?.totalCurrentValue}</p>
+            <p className="text-lg font-semibold text-gray-800 dark:text-white">{currencyMeta.symbol}{portfolio?.summary?.totalCurrentValue}</p>
           </div>
           <div>
             <p className="text-gray-500 dark:text-gray-400 text-sm">Total P/L</p>
             <p className={`text-lg font-semibold ${portfolio?.summary?.totalProfitLoss >= 0 ? "text-green-500" : "text-red-500"}`}>
-              ₹{portfolio?.summary?.totalProfitLoss}
+              {currencyMeta.symbol}{portfolio?.summary?.totalProfitLoss}
             </p>
           </div>
         </div>

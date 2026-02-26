@@ -3,9 +3,11 @@ import AppLayout from "../components/layout/AppLayout";
 import API from "../services/Api";
 import PortfolioChart from "../components/dashboard/PortfolioChart";
 import { useAuth } from "../context/AuthContext";
+import { useCurrency } from "../context/CurrencyContext";
 
 export default function Dashboard() {
   const { user, authLoading } = useAuth();
+  const { currency } = useCurrency();
   const [portfolio, setPortfolio] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -35,7 +37,7 @@ export default function Dashboard() {
   const formatCurrency = (num) =>
     new Intl.NumberFormat("en-IN", {
       style: "currency",
-      currency: "INR",
+      currency: currency,
     }).format(num || 0);
 
   if (authLoading || loading) {

@@ -1,7 +1,7 @@
 const Portfolio = require("../models/Portfolio");
 const User = require("../models/User");
 const { getCurrentStockPrice } = require("../services/stockService");
-const { getUsdToInrRate } = require("../services/currencyService");
+const { getConversionRate } = require("../services/currencyService");
 
 // ===============================
 // Create portfolio (if not exists)
@@ -11,17 +11,11 @@ exports.createPortfolio = async (req, res) => {
     const { firebaseUID } = req.body;
 
     const user = await User.findOne({ firebaseUID });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    if (!user) return res.status(404).json({ message: "User not found" });
 
     let portfolio = await Portfolio.findOne({ user: user._id });
-
     if (!portfolio) {
-      portfolio = await Portfolio.create({
-        user: user._id,
-        stocks: [],
-      });
+      portfolio = await Portfolio.create({ user: user._id, stocks: [] });
     }
 
     res.status(200).json(portfolio);
@@ -37,15 +31,13 @@ exports.createPortfolio = async (req, res) => {
 // ===============================
 exports.addStock = async (req, res) => {
   try {
-    const { firebaseUID, symbol, quantity, buyPrice, estSellPrice, isCustom } =
-      req.body;
+    const { firebaseUID, symbol, quantity, buyPrice, estSellPrice, isCustom } = req.body;
 
     const user = await User.findOne({ firebaseUID });
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const portfolio = await Portfolio.findOne({ user: user._id });
-    if (!portfolio)
-      return res.status(404).json({ message: "Portfolio not found" });
+    if (!portfolio) return res.status(404).json({ message: "Portfolio not found" });
 
     portfolio.stocks.push({
       symbol,
@@ -65,42 +57,37 @@ exports.addStock = async (req, res) => {
 
 
 // ===============================
-// Get portfolio (with USD → INR conversion)
+// Get portfolio (with dynamic currency conversion)
 // ===============================
 exports.getPortfolio = async (req, res) => {
   try {
     const { firebaseUID } = req.params;
 
     const user = await User.findOne({ firebaseUID });
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
-    }
+    if (!user) return res.status(404).json({ message: "User not found" });
 
     let portfolio = await Portfolio.findOne({ user: user._id });
-
     if (!portfolio) {
       portfolio = await Portfolio.create({ user: user._id, stocks: [] });
     }
 
-    // ── Fetch USD/INR rate once for this entire request ───────────────────
-    const usdToInr = await getUsdToInrRate();
+    // ── Use the user's preferred currency, default to INR ─────────────────
+    const targetCurrency = user.preferredCurrency || "INR";
+    const conversionRate = await getConversionRate(targetCurrency);
 
     let totalInvested = 0;
     let totalCurrentValue = 0;
     const enrichedStocks = [];
 
     for (const stock of portfolio.stocks) {
-      let currentPriceUsd = 0;
 
+      // ── Custom assets: stored in user's currency, no conversion needed ───
       if (stock.isCustom) {
-        // Custom assets are already stored in user's currency (INR)
-        // so we skip conversion — store and display as-is
-        const investedAmount = stock.quantity * stock.buyPrice;
-        const currentValue =
-          stock.quantity * (stock.estSellPrice || stock.buyPrice);
-        const profitLoss = parseFloat(
-          (currentValue - investedAmount).toFixed(2)
+        const investedAmount = parseFloat((stock.quantity * stock.buyPrice).toFixed(2));
+        const currentValue = parseFloat(
+          (stock.quantity * (stock.estSellPrice || stock.buyPrice)).toFixed(2)
         );
+        const profitLoss = parseFloat((currentValue - investedAmount).toFixed(2));
 
         totalInvested += investedAmount;
         totalCurrentValue += currentValue;
@@ -116,29 +103,23 @@ exports.getPortfolio = async (req, res) => {
           isCustom: true,
           estSellPrice: stock.estSellPrice || null,
         });
-
         continue;
       }
 
-      // ── Live stock: fetch USD price then convert to INR ─────────────────
+      // ── Live stock: fetch USD price, convert to target currency ───────────
+      let currentPriceUsd = 0;
       try {
         currentPriceUsd = await getCurrentStockPrice(stock.symbol);
       } catch (err) {
         console.log("Live price fetch failed:", stock.symbol);
-        currentPriceUsd = stock.buyPrice / usdToInr; // reverse-estimate
+        currentPriceUsd = stock.buyPrice / conversionRate;
       }
 
-      const currentPriceInr = parseFloat(
-        (currentPriceUsd * usdToInr).toFixed(2)
-      );
+      const currentPrice = parseFloat((currentPriceUsd * conversionRate).toFixed(2));
 
-      // buyPrice was entered by the user in INR already, so no conversion needed
-      const investedAmount = parseFloat(
-        (stock.quantity * stock.buyPrice).toFixed(2)
-      );
-      const currentValue = parseFloat(
-        (stock.quantity * currentPriceInr).toFixed(2)
-      );
+      // buyPrice was entered by user already in their preferred currency
+      const investedAmount = parseFloat((stock.quantity * stock.buyPrice).toFixed(2));
+      const currentValue = parseFloat((stock.quantity * currentPrice).toFixed(2));
       const profitLoss = parseFloat((currentValue - investedAmount).toFixed(2));
 
       totalInvested += investedAmount;
@@ -148,7 +129,7 @@ exports.getPortfolio = async (req, res) => {
         symbol: stock.symbol,
         quantity: stock.quantity,
         buyPrice: stock.buyPrice,
-        currentPrice: currentPriceInr,
+        currentPrice,
         investedAmount,
         currentValue,
         profitLoss,
@@ -157,18 +138,16 @@ exports.getPortfolio = async (req, res) => {
       });
     }
 
-    const totalProfitLoss = parseFloat(
-      (totalCurrentValue - totalInvested).toFixed(2)
-    );
-
     res.status(200).json({
       stocks: enrichedStocks,
       summary: {
         totalInvested: parseFloat(totalInvested.toFixed(2)),
         totalCurrentValue: parseFloat(totalCurrentValue.toFixed(2)),
-        totalProfitLoss,
+        totalProfitLoss: parseFloat((totalCurrentValue - totalInvested).toFixed(2)),
       },
+      currency: targetCurrency,
     });
+
   } catch (error) {
     console.error("Get Portfolio Error:", error);
     res.status(500).json({ message: "Server error" });
@@ -187,8 +166,7 @@ exports.updateStock = async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const portfolio = await Portfolio.findOne({ user: user._id });
-    if (!portfolio)
-      return res.status(404).json({ message: "Portfolio not found" });
+    if (!portfolio) return res.status(404).json({ message: "Portfolio not found" });
 
     const stock = portfolio.stocks.find((s) => s.symbol === symbol);
     if (!stock) return res.status(404).json({ message: "Stock not found" });
@@ -217,12 +195,9 @@ exports.removeStock = async (req, res) => {
     if (!user) return res.status(404).json({ message: "User not found" });
 
     const portfolio = await Portfolio.findOne({ user: user._id });
-    if (!portfolio)
-      return res.status(404).json({ message: "Portfolio not found" });
+    if (!portfolio) return res.status(404).json({ message: "Portfolio not found" });
 
-    portfolio.stocks = portfolio.stocks.filter(
-      (stock) => stock.symbol !== symbol
-    );
+    portfolio.stocks = portfolio.stocks.filter((s) => s.symbol !== symbol);
 
     await portfolio.save();
     res.status(200).json({ message: "Stock removed successfully" });

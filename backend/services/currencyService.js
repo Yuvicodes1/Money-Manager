@@ -1,55 +1,65 @@
 const axios = require("axios");
 
-// ── In-memory cache for exchange rate ────────────────────────────────────────
-let cachedRate = null;
+// ── In-memory cache for all rates ────────────────────────────────────────────
+let cachedRates = null;
 let cacheTimestamp = null;
-const CACHE_TTL = 60 * 60 * 1000; // 1 hour in ms
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
+// Fallback rates if API is unreachable
+const FALLBACK_RATES = {
+  USD: 1,
+  INR: 84,
+  EUR: 0.92,
+};
 
 /**
- * Returns the current USD → INR exchange rate.
- * Fetches fresh from ExchangeRate-API if cache is stale or empty.
- * Falls back to a safe hardcoded rate if the fetch fails.
+ * Fetches all rates from USD base and caches them.
+ * Returns an object: { USD: 1, INR: 84.xx, EUR: 0.9x }
  */
-exports.getUsdToInrRate = async () => {
+const getAllRates = async () => {
   const now = Date.now();
 
-  // ── Return cached rate if still fresh ────────────────────────────────────
-  if (cachedRate && cacheTimestamp && now - cacheTimestamp < CACHE_TTL) {
-    console.log("Currency cache hit. Rate:", cachedRate);
-    return cachedRate;
+  if (cachedRates && cacheTimestamp && now - cacheTimestamp < CACHE_TTL) {
+    return cachedRates;
   }
 
   try {
-    console.log("Fetching fresh USD/INR exchange rate...");
+    console.log("Fetching fresh exchange rates...");
     const response = await axios.get(
       "https://api.exchangerate-api.com/v4/latest/USD",
       { timeout: 5000 }
     );
 
-    const rate = response.data?.rates?.INR;
+    const { INR, EUR } = response.data?.rates || {};
+    if (!INR || !EUR) throw new Error("Missing rates in response");
 
-    if (!rate || isNaN(rate)) {
-      throw new Error("Invalid rate in response");
-    }
-
-    // ── Update cache ──────────────────────────────────────────────────────
-    cachedRate = rate;
+    cachedRates = { USD: 1, INR, EUR };
     cacheTimestamp = now;
 
-    console.log("Fresh USD/INR rate fetched:", rate);
-    return rate;
+    console.log("Exchange rates cached:", cachedRates);
+    return cachedRates;
 
   } catch (error) {
     console.error("Exchange rate fetch failed:", error.message);
-
-    // ── Fallback: use stale cache if available, else hardcoded safe value ──
-    if (cachedRate) {
-      console.warn("Using stale cached rate:", cachedRate);
-      return cachedRate;
+    if (cachedRates) {
+      console.warn("Using stale cached rates");
+      return cachedRates;
     }
-
-    const FALLBACK_RATE = 84;
-    console.warn("Using hardcoded fallback rate:", FALLBACK_RATE);
-    return FALLBACK_RATE;
+    console.warn("Using hardcoded fallback rates");
+    return FALLBACK_RATES;
   }
 };
+
+/**
+ * Returns the USD -> targetCurrency conversion rate.
+ * @param {"USD"|"INR"|"EUR"} targetCurrency
+ */
+exports.getConversionRate = async (targetCurrency = "INR") => {
+  const rates = await getAllRates();
+  return rates[targetCurrency] ?? 1;
+};
+
+/**
+ * Expose all rates (used by portfolio controller to avoid multiple fetches).
+ */
+exports.getAllRates = getAllRates;
