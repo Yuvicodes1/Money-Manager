@@ -5,10 +5,12 @@ import API from "../services/Api";
 import { useAuth } from "../context/AuthContext";
 import { useCurrency } from "../context/CurrencyContext";
 import AddInvestmentModal from "../components/AddInvestmentModal";
+import AnimatedList from "../components/AnimatedList";
 import {
-  FaSearch, FaSortAmountDown, FaSortAmountUp,
-  FaBookmark, FaRegBookmark, FaPlus, FaSpinner,
+  FaSearch,
+  FaBookmark, FaRegBookmark, FaPlus,
 } from "react-icons/fa";
+import MoneyLoader from "../components/MoneyLoader";
 
 const SORT_OPTIONS = [
   { label: "Default",        value: "default"   },
@@ -142,9 +144,8 @@ export default function Market() {
 
       {/* ── Content ──────────────────────────────────────────────────────── */}
       {loading || wlLoading ? (
-        <div className="flex items-center justify-center py-20 gap-3 text-gray-400">
-          <FaSpinner className="animate-spin" size={20} />
-          <span>Loading...</span>
+        <div className="flex items-center justify-center py-20">
+          <MoneyLoader text="Fetching market data..." />
         </div>
       ) : error ? (
         <div className="text-center py-20 text-red-500">
@@ -161,9 +162,43 @@ export default function Market() {
             : "No stocks found matching your search."}
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          {processedStocks.map((stock) => (
-            <StockCard
+        <>
+          {/* ── Mobile: AnimatedList ──────────────────────────────────── */}
+          <div className="sm:hidden">
+            <AnimatedList
+              items={processedStocks.map((stock) => {
+                const isPos = stock.percentChange >= 0;
+                return (
+                  <div key={stock.symbol} className="flex items-center justify-between w-full"
+                    onClick={() => navigate(`/stock/${stock.symbol}`)}>
+                    <div>
+                      <p className="font-bold text-sm text-lightText dark:text-darkText">{stock.symbol}</p>
+                      <p className={`text-xs font-medium ${isPos ? "text-green-500" : "text-red-500"}`}>
+                        {isPos ? "▲" : "▼"} {Math.abs(stock.percentChange ?? 0).toFixed(2)}%
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold text-sm text-lightText dark:text-darkText">
+                        {format(stock.currentPrice ?? 0)}
+                      </p>
+                      <p className={`text-xs ${isPos ? "text-green-500" : "text-red-500"}`}>
+                        {isPos ? "+" : ""}{format(stock.change ?? 0)}
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+              onItemSelect={(_, i) => navigate(`/stock/${processedStocks[i]?.symbol}`)}
+              showGradients
+              enableArrowNavigation
+              displayScrollbar={false}
+            />
+          </div>
+
+          {/* ── Desktop/tablet: Grid ──────────────────────────────────── */}
+          <div className="hidden sm:grid grid-cols-2 lg:grid-cols-3 gap-4">
+            {processedStocks.map((stock) => (
+              <StockCard
               key={stock.symbol}
               stock={stock}
               isHovered={hoveredSymbol === stock.symbol}
@@ -175,8 +210,9 @@ export default function Market() {
               onQuickAdd={() => setQuickAdd(stock)}
               onNavigate={() => navigate(`/stock/${stock.symbol}`)}
             />
-          ))}
-        </div>
+            ))}
+          </div>
+        </>
       )}
 
       {/* ── Quick Add Modal ───────────────────────────────────────────────── */}

@@ -42,12 +42,15 @@ export default function Settings() {
   const [showDeleteSection, setShowDeleteSection] = useState(false);
 
   // ── Helpers ───────────────────────────────────────────────────────────────
-  const inputClass = `w-full p-3 rounded-lg border text-sm
-    bg-white dark:bg-darkBg
-    text-lightText dark:text-darkText
-    placeholder-gray-400 dark:placeholder-gray-500
-    border-gray-300 dark:border-darkBorder
-    focus:outline-none focus:ring-2 focus:ring-lightAccent dark:focus:ring-darkAccent transition`;
+  // Fixed string — not recomputed on every keystroke
+  const inputClass = [
+    "w-full p-3 rounded-lg border text-sm transition",
+    "bg-white dark:bg-darkBg",
+    "text-lightText dark:text-darkText",
+    "placeholder-gray-400 dark:placeholder-gray-500",
+    "border-gray-300 dark:border-darkBorder",
+    "focus:outline-none focus:ring-2 focus:ring-lightAccent dark:focus:ring-darkAccent",
+  ].join(" ");
 
   const successMsg = (msg) => ({ type: "success", text: msg });
   const errorMsg   = (msg) => ({ type: "error",   text: msg });
