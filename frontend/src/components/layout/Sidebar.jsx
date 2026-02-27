@@ -13,8 +13,8 @@ const NAV_ITEMS = [
   { to: "/dashboard", icon: <FaChartPie />, label: "Dashboard" },
   { to: "/portfolio", icon: <FaWallet />,   label: "Portfolio" },
   { to: "/market",    icon: <FaSearch />,   label: "Market"    },
+  { to: "/expenses",  icon: <FaMoneyBillWave />, label: "Expenses"},
   { to: "/settings",  icon: <FaCog />,      label: "Settings"  },
-  { to: "/expenses",  icon: <FaMoneyBillWave />, label: "Expenses"  },
 ];
 
 export default function Sidebar() {

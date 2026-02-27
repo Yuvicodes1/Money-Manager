@@ -1,20 +1,33 @@
-import { useContext } from "react";
+import { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { ThemeContext } from "../context/ThemeContext";
 import { FaChartLine, FaWallet, FaArrowRight, FaMoon, FaSun } from "react-icons/fa";
 import { signOut } from "firebase/auth";
 import { auth } from "../firebase";
+import API from "../services/Api";
 
 export default function HomePage() {
   const { user } = useAuth();
   const { darkMode, setDarkMode } = useContext(ThemeContext);
   const navigate = useNavigate();
+  const [mongoName, setMongoName] = useState("");
+
+  // Fetch the user's name from MongoDB (source of truth for display name)
+  useEffect(() => {
+    if (!user) return;
+    API.get(`/users/${user.uid}/settings`)
+      .then((res) => {
+        const name = res.data?.displayName || res.data?.name || "";
+        setMongoName(name);
+      })
+      .catch(() => {});
+  }, [user]);
 
   const getFirstName = () => {
-    if (!user) return "";
-    if (user.displayName) return user.displayName.split(" ")[0];
-    return user.email?.split("@")[0] ?? "";
+    // Priority: MongoDB name → Firebase displayName → email prefix
+    const fullName = mongoName || user?.displayName || user?.email?.split("@")[0] || "";
+    return fullName.split(" ")[0];
   };
 
   const handleLogout = async () => {
@@ -24,9 +37,12 @@ export default function HomePage() {
 
   return (
     <div className="min-h-screen flex flex-col
-      bg-lightBg dark:bg-darkBg
       text-lightText dark:text-darkText
       transition-colors duration-500"
+      style={{ background: darkMode
+        ? "radial-gradient(ellipse at 20% 20%, #1C2A23 0%, #071108 60%)"
+        : "radial-gradient(ellipse at 20% 20%, #fff9ee 0%, #FEFFFE 60%)"
+      }}
     >
       {/* ── Header ───────────────────────────────────────────────────────── */}
       <header className="flex justify-between items-center
@@ -88,10 +104,16 @@ export default function HomePage() {
             onClick={() => navigate("/dashboard")}
             className="group cursor-pointer
             p-8 rounded-3xl
+            border shadow-sm hover:shadow-2xl
+            transition-all duration-300 hover:-translate-y-2
+            border-gray-200 dark:border-darkBorder
             bg-white dark:bg-darkCard
-            border border-gray-200 dark:border-darkBorder
-            shadow-sm hover:shadow-xl
-            transition-all duration-300 hover:-translate-y-2"
+            hover:border-lightAccent/40 dark:hover:border-darkAccent/40"
+            style={{ }}
+            onMouseEnter={e => e.currentTarget.style.background = darkMode
+              ? "linear-gradient(135deg, #0F1A14 0%, #1a2d1f 100%)"
+              : "linear-gradient(135deg, #ffffff 0%, #fff5e0 100%)"}
+            onMouseLeave={e => e.currentTarget.style.background = ""}
           >
             <div className="w-14 h-14 rounded-2xl mb-6
               flex items-center justify-center
@@ -130,10 +152,15 @@ export default function HomePage() {
             onClick={() => navigate("/expenses")}
             className="group cursor-pointer
             p-8 rounded-3xl
+            border shadow-sm hover:shadow-2xl
+            transition-all duration-300 hover:-translate-y-2
+            border-gray-200 dark:border-darkBorder
             bg-white dark:bg-darkCard
-            border border-gray-200 dark:border-darkBorder
-            shadow-sm hover:shadow-xl
-            transition-all duration-300 hover:-translate-y-2"
+            hover:border-emerald-300/60 dark:hover:border-emerald-500/40"
+            onMouseEnter={e => e.currentTarget.style.background = darkMode
+              ? "linear-gradient(135deg, #0F1A14 0%, #0d2018 100%)"
+              : "linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%)"}
+            onMouseLeave={e => e.currentTarget.style.background = ""}
           >
             <div className="w-14 h-14 rounded-2xl mb-6
               flex items-center justify-center
